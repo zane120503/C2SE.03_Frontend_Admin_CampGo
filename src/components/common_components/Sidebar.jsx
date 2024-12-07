@@ -1,7 +1,9 @@
 import React, { useEffect, useState } from "react";
 import { BarChart2, DollarSign, Settings, ShoppingBag, ShoppingCart, TrendingUp, Users, Menu } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { useAuth } from "../../context/AuthContext";
+import { toast } from "react-toastify";
 
 const SIDEBAR_ITEMS = [
     { name: "Overview", icon: BarChart2, color: "#6366f1", href: "/" },
@@ -16,6 +18,8 @@ const SIDEBAR_ITEMS = [
 const Sidebar = () => {
     const [isSidebarOpen, setIsSidebarOpen] = useState(true);
     const [isMobile, setIsMobile] = useState(false); // State to track mobile devices
+    const { logout } = useAuth();
+    const navigate = useNavigate();
 
     useEffect(() => {
         const mediaQuery = window.matchMedia("(max-width: 768px)");
@@ -30,6 +34,17 @@ const Sidebar = () => {
 
         return () => mediaQuery.removeEventListener("change", handleMediaQueryChange);
     }, []);
+
+    const handleLogout = () => {
+        try {
+            logout();
+            toast.success("Logged out successfully");
+            navigate("/login");
+        } catch (error) {
+            toast.error("Error logging out");
+            console.error("Logout error:", error);
+        }
+    };
 
     return (
         <>
@@ -72,6 +87,15 @@ const Sidebar = () => {
                             </Link>
                         ))}
                     </nav>
+
+                    <div className="p-4 border-t border-gray-700">
+                        <button
+                            onClick={handleLogout}
+                            className="w-full px-4 py-2 text-white bg-red-600 hover:bg-red-700 rounded transition duration-200"
+                        >
+                            Logout
+                        </button>
+                    </div>
                 </div>
             </motion.div>
         </>

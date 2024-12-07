@@ -1,7 +1,9 @@
 import React from 'react'
-import { Routes, Route } from 'react-router-dom'
+import { Routes, Route, Navigate } from 'react-router-dom'
+import { useAuth } from './context/AuthContext'
 
 import Sidebar from './components/common_components/Sidebar'
+import LoginPage from './pages/LoginPage'
 
 import OverviewPage from './pages/OverviewPage'
 import ProductsPage from './pages/ProductsPage'
@@ -11,32 +13,106 @@ import OrdersPage from './pages/OrdersPage'
 import AnalyticsPage from './pages/AnalyticsPage'
 import SettingsPage from './pages/SettingsPage'
 
-
-
 const App = () => {
+  const { user } = useAuth()
+  const isAuthenticated = !!user
+
   return (
-    <div className='flex h-screen bg-gray-900 text-gray-100 overflow-hidden'>
+    <div className='flex h-screen bg-gray-900 text-gray-100'>
+      {isAuthenticated && <Sidebar />}
 
-      {/* BACKGROUND SETTINGS */}
-      <div className='fixed inset-0 z-0'>
-        <div className='absolute inset-0 bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 opacity-80' />
-        <div className='absolute inset-0 backdrop-blur-3xl' />
+      <div className='flex-1'>
+        <Routes>
+          <Route 
+            path="/login" 
+            element={
+              isAuthenticated ? <Navigate to="/" replace /> : <LoginPage />
+            } 
+          />
+          
+          <Route
+            path="/"
+            element={
+              isAuthenticated ? (
+                <OverviewPage />
+              ) : (
+                <Navigate to="/login" replace />
+              )
+            }
+          />
+          
+          <Route
+            path="/products"
+            element={
+              isAuthenticated ? (
+                <ProductsPage />
+              ) : (
+                <Navigate to="/login" replace />
+              )
+            }
+          />
+          
+          <Route
+            path="/users"
+            element={
+              isAuthenticated ? (
+                <UsersPage />
+              ) : (
+                <Navigate to="/login" replace />
+              )
+            }
+          />
+          
+          <Route
+            path="/sales"
+            element={
+              isAuthenticated ? (
+                <SalesPage />
+              ) : (
+                <Navigate to="/login" replace />
+              )
+            }
+          />
+          
+          <Route
+            path="/orders"
+            element={
+              isAuthenticated ? (
+                <OrdersPage />
+              ) : (
+                <Navigate to="/login" replace />
+              )
+            }
+          />
+          
+          <Route
+            path="/analytics"
+            element={
+              isAuthenticated ? (
+                <AnalyticsPage />
+              ) : (
+                <Navigate to="/login" replace />
+              )
+            }
+          />
+          
+          <Route
+            path="/settings"
+            element={
+              isAuthenticated ? (
+                <SettingsPage />
+              ) : (
+                <Navigate to="/login" replace />
+              )
+            }
+          />
+          
+          <Route
+            path="*"
+            element={<Navigate to={isAuthenticated ? "/" : "/login"} replace />}
+          />
+        </Routes>
       </div>
-
-
-      <Sidebar />
-
-
-      <Routes>
-        <Route path='/' element={<OverviewPage />} />
-        <Route path='/products' element={<ProductsPage />} />
-        <Route path='/users' element={<UsersPage />} />
-        <Route path='/sales' element={<SalesPage />} />
-        <Route path='/orders' element={<OrdersPage />} />
-        <Route path='/analytics' element={<AnalyticsPage />} />
-        <Route path='/settings' element={<SettingsPage />} />
-      </Routes>
-
     </div>
   )
 }
