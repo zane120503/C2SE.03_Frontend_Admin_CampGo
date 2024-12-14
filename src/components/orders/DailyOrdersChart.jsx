@@ -1,20 +1,37 @@
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 import { motion } from 'framer-motion';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-
-
-const Orders_Data = [
-    { date: "07/01", Orders: 48 },
-    { date: "07/02", Orders: 42 },
-    { date: "07/03", Orders: 49 },
-    { date: "07/04", Orders: 62 },
-    { date: "07/05", Orders: 55 },
-    { date: "07/06", Orders: 52 },
-    { date: "07/07", Orders: 62 },
-
-]
+import axios from 'axios';
+import { toast } from 'react-toastify';
 
 const DailyOrdersChart = () => {
+    const [dailyOrders, setDailyOrders] = useState([])
+    const [loading, setLoading] = useState(true)
+
+    useEffect(() => {
+        const fetchDailyOrders = async () => {
+            try {
+                const token = localStorage.getItem('accessToken')
+                const response = await axios.get(
+                    'http://localhost:3000/api/v1/orders/daily',
+                    {
+                        headers: {
+                            Authorization: `Bearer ${token}`
+                        }
+                    }
+                )
+                setDailyOrders(response.data.data)
+            } catch (error) {
+                console.error('Error fetching daily orders:', error)
+                toast.error('Failed to load daily orders data')
+            } finally {
+                setLoading(false)
+            }
+        }
+
+        fetchDailyOrders()
+    }, [])
+
     return (
         <motion.div
             className='bg-gray-800 bg-opacity-50 shadow-lg backdrop-blur-md rounded-xl p-5 border border-gray-700'
@@ -28,7 +45,7 @@ const DailyOrdersChart = () => {
 
             <div className='h-80'>
                 <ResponsiveContainer width={"100%"} height={"100%"}>
-                    <LineChart data={Orders_Data}>
+                    <LineChart data={dailyOrders}>
                         <CartesianGrid strokeDasharray={'3 3'} stroke='#4b5563' />
                         <XAxis dataKey={"date"} stroke='#9ca3af' />
                         <YAxis stroke='#9ca3af' />
@@ -47,7 +64,7 @@ const DailyOrdersChart = () => {
                             dot={{ fill: '#6366f1', strokeWidth: 2, r: 5 }}
                             activeDot={{ r: 8, strokeWidth: 2 }}
                         />
-                        <Legend/>
+                        <Legend />
                     </LineChart>
                 </ResponsiveContainer>
             </div>

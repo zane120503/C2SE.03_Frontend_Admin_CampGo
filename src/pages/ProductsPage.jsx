@@ -16,12 +16,15 @@ const ProductsPage = () => {
     tcp: 0,
   });
 
+  // Get access token once for all API calls
+  const accessToken = localStorage.getItem('accessToken');
+
   useEffect(() => {
     const fetchProductStats = async () => {
       try {
         const response = await fetch('http://localhost:3000/api/v1/product-stats', {
           headers: {
-            'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
+            'Authorization': `Bearer ${accessToken}`,
             'Content-Type': 'application/json'
           }
         });
@@ -41,7 +44,7 @@ const ProductsPage = () => {
     };
 
     fetchProductStats();
-  }, []);
+  }, [accessToken]);
 
   return (
     <div className='flex-1 overflow-auto relative z-10 bg-gray-900'>
@@ -65,9 +68,9 @@ const ProductsPage = () => {
         <ProductTable />
 
         {/* CHARTS */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-          <SalesTrendChart />
-          <CategoryDistributionChart />
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 mt-5">
+          <SalesTrendChart authHeader={accessToken} />
+          <CategoryDistributionChart authHeader={accessToken} />
         </div>
       </main>
     </div>
