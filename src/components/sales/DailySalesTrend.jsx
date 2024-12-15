@@ -1,18 +1,36 @@
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-
-const Daily_Sales_Data = [
-  { name: "Mon", Sales: 800 },
-  { name: "Tue", Sales: 1250 },
-  { name: "Wed", Sales: 500 },
-  { name: "Thu", Sales: 1000 },
-  { name: "Fri", Sales: 1300 },
-  { name: "Sat", Sales: 1550 },
-  { name: "Sun", Sales: 1150 },
-];
+import axios from 'axios';
 
 const DailySalesTrend = () => {
+  const [salesData, setSalesData] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const fetchDailySales = async () => {
+      try {
+        const response = await axios.get('http://localhost:3000/api/admin/daily-sales-trend', {
+          headers: {
+              'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+          }
+        });
+        setSalesData(response.data.data); // Updated to use response.data.data
+        setIsLoading(false);
+      } catch (err) {
+        console.error('Error fetching daily sales:', err);
+        setError('Failed to load sales data');
+        setIsLoading(false);
+      }
+    };
+
+    fetchDailySales();
+  }, []);
+
+  if (isLoading) return <div className="text-gray-300">Loading...</div>;
+  if (error) return <div className="text-red-500">{error}</div>;
+
   return (
     <motion.div
       className='bg-gray-800 bg-opacity-50 shadow-lg backdrop-blur-md rounded-xl p-5 border border-gray-700'
@@ -26,7 +44,7 @@ const DailySalesTrend = () => {
 
       <div style={{ width: "100%", height: 300 }}>
         <ResponsiveContainer>
-          <BarChart data={Daily_Sales_Data}>
+          <BarChart data={salesData}>
             <CartesianGrid strokeDasharray="3 3" stroke='#374151' />
             <XAxis dataKey="name" stroke='#9ca3af' />
             <YAxis stroke='#9ca3af' />
@@ -36,15 +54,15 @@ const DailySalesTrend = () => {
                 borderColor: "#4b5563",
               }}
               itemStyle={{ color: "#e5e7eb" }}
+              formatter={(value) => [`$${value.toFixed(2)}`, "Sales"]}
             />
             <Bar dataKey="Sales" fill='#10b981' />
             <Legend />
           </BarChart>
         </ResponsiveContainer>
       </div>
-
     </motion.div>
-  )
-}
+  );
+};
 
-export default DailySalesTrend
+export default DailySalesTrend;
