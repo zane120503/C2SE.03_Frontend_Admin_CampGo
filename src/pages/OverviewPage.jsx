@@ -15,7 +15,7 @@ const OverviewPage = () => {
     totalSales: 0,
     newUsers: 0,
     totalProducts: 0,
-    conversionRate: 0,
+    //conversionRate: 0,
   });
 
   const { authHeader } = useAuth();
@@ -38,7 +38,7 @@ const OverviewPage = () => {
             totalSales: data.stats.totalSales,
             newUsers: data.stats.totalUsers,
             totalProducts: data.stats.totalProducts,
-            conversionRate: data.stats.conversionRate,
+            //conversionRate: data.stats.conversionRate,
           });
         }
       } catch (error) {
@@ -69,7 +69,7 @@ const OverviewPage = () => {
           <StatCards name="Total Sales" icon={Zap} value={`$${stats?.totalSales || 0}`} color="#6366f1" />
           <StatCards name="New Users" icon={Users} value={stats?.newUsers || 0} color="#8b5cf6" />
           <StatCards name="Total Products" icon={ShoppingBag} value={stats?.totalProducts || 0} color="#ec4899" />
-          <StatCards name="Conversion Rate" icon={BarChart2} value={`${stats?.conversionRate || 0}%`} color="#10b981" />
+          {/* <StatCards name="Conversion Rate" icon={BarChart2} value={`${stats?.conversionRate || 0}%`} color="#10b981" /> */}
 
         </motion.div>
 

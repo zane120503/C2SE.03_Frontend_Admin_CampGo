@@ -4,19 +4,19 @@ import { useAuth } from './context/AuthContext'
 
 import Sidebar from './components/common_components/Sidebar'
 import LoginPage from './pages/LoginPage'
-
 import OverviewPage from './pages/OverviewPage'
 import ProductsPage from './pages/ProductsPage'
 import UsersPage from './pages/UsersPage'
-import SalesPage from './pages/SalesPage'
+import CampsitePage from './pages/CampsitePage'
 import OrdersPage from './pages/OrdersPage'
 import AnalyticsPage from './pages/AnalyticsPage'
 import SettingsPage from './pages/SettingsPage'
+import CategoryPage from './pages/CategoryPage'
 
 const App = () => {
   const { user } = useAuth()
   const isAuthenticated = !!user
-
+  // const isAuthenticated = true
   return (
     <div className='flex h-screen bg-gray-900 text-gray-100'>
       {isAuthenticated && <Sidebar />}
@@ -64,16 +64,26 @@ const App = () => {
           />
           
           <Route
-            path="/sales"
+            path="/campsites"
             element={
               isAuthenticated ? (
-                <SalesPage />
+                <CampsitePage />
               ) : (
                 <Navigate to="/login" replace />
               )
             }
           />
           
+          <Route
+            path="/categories"
+            element={
+              isAuthenticated ? (
+                <CategoryPage />
+              ) : (
+                <Navigate to="/login" replace />
+              )
+            }
+          />
           <Route
             path="/orders"
             element={

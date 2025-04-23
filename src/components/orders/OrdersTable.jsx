@@ -15,14 +15,15 @@ const OrdersTable = () => {
     const [error, setError] = useState(null);
     const [totalOrders, setTotalOrders] = useState(0);
     const [notification, setNotification] = useState({ show: false, message: '', type: '' });
-    const itemsPerPage = 6;
 
-    // Fetch orders from API
+    const itemsPerPage = 6;
+    const totalPages = Math.ceil(totalOrders / itemsPerPage);
+
     useEffect(() => {
         const fetchOrders = async () => {
             try {
                 setLoading(true);
-                const response = await axios.get(`http://localhost:3000/api/v1/allorders?page=${currentPage}&limit=${itemsPerPage}`, {
+                const response = await axios.get(`http://localhost:3000/api/admin/orders?page=${currentPage}&limit=${itemsPerPage}`, {
                     headers: {
                         'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
                     }
@@ -44,21 +45,18 @@ const OrdersTable = () => {
         fetchOrders();
     }, [currentPage]);
 
-    // Add pagination function
     const paginate = (pageNumber) => {
         if (pageNumber > 0 && pageNumber <= totalPages) {
             setCurrentPage(pageNumber);
         }
     };
 
-    // Modified handleOpenModal function
     const handleOpenModal = (order) => {
         setSelectedOrder(order);
-        setUpdatedStatus(order.delivery_status); // Use delivery_status instead of deliveryStatus
+        setUpdatedStatus(order.deliveryStatus);
         setShowModal(true);
     };
 
-    // Add notification handler
     const showNotification = (message, type = 'success') => {
         setNotification({ show: true, message, type });
         setTimeout(() => {
@@ -66,14 +64,11 @@ const OrdersTable = () => {
         }, 3000);
     };
 
-    // Modified handleSaveStatus function
     const handleSaveStatus = async () => {
+        if (!selectedOrder) return;
         try {
-            console.log('Selected order:', selectedOrder);
-            console.log('Updated status:', updatedStatus);
-            const response = await axios.put('http://localhost:3000/api/v1/updateorderstatus', {
-                orderId: selectedOrder.id, // Change from id to _id
-                status: updatedStatus
+            const response = await axios.put(`http://localhost:3000/api/admin/orders/${selectedOrder._id}`, {
+                deliveryStatus: updatedStatus
             }, {
                 headers: {
                     'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
@@ -81,14 +76,13 @@ const OrdersTable = () => {
             });
 
             if (response.data.success) {
-                // Update local state
-                const updatedOrders = filteredOrders.map(order =>
-                    order.id === selectedOrder.id
+                const updated = orders.map(order =>
+                    order._id === selectedOrder._id
                         ? { ...order, deliveryStatus: updatedStatus }
                         : order
                 );
-                setFilteredOrders(updatedOrders);
-                setOrders(updatedOrders);
+                setOrders(updated);
+                setFilteredOrders(updated);
                 setShowModal(false);
                 showNotification('Order status updated successfully');
             }
@@ -98,14 +92,13 @@ const OrdersTable = () => {
         }
     };
 
-    // Search handler
     const SearchHandler = (e) => {
         const term = e.target.value.toLowerCase();
         setSearchTerm(term);
-        
+
         const filtered = orders.filter(order =>
             order.user?.user_name?.toLowerCase().includes(term) ||
-            order.id?.toLowerCase().includes(term)
+            order._id?.toLowerCase().includes(term)
         );
         setFilteredOrders(filtered);
         setCurrentPage(1);
@@ -114,8 +107,6 @@ const OrdersTable = () => {
     if (loading) return <div className="text-white">Loading orders...</div>;
     if (error) return <div className="text-red-500">Error: {error}</div>;
 
-    const totalPages = Math.ceil(totalOrders / itemsPerPage);
-
     return (
         <motion.div
             className='bg-gray-800 bg-opacity-50 shadow-lg backdrop-blur-md rounded-xl p-5 border border-gray-700 mb-6 relative z-10'
@@ -123,7 +114,6 @@ const OrdersTable = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3, delay: 0.3 }}
         >
-            {/* Notification Toast */}
             <AnimatePresence>
                 {notification.show && (
                     <motion.div
@@ -144,7 +134,6 @@ const OrdersTable = () => {
                 )}
             </AnimatePresence>
 
-            {/* Header and Search - keeping existing code */}
             <div className='flex justify-between items-center mb-6'>
                 <h2 className='text-xl font-semibold text-gray-100'>Orders List</h2>
 
@@ -158,10 +147,8 @@ const OrdersTable = () => {
                         value={searchTerm}
                     />
                 </div>
-
             </div>
 
-            {/* TABLE */}
             <div className='overflow-x-auto' style={{ minHeight: '400px' }}>
                 <table className='min-w-full divide-y divide-gray-400'>
                     <thead>
@@ -178,13 +165,13 @@ const OrdersTable = () => {
                     <tbody className='divide-y divide-gray-500'>
                         {filteredOrders.map((order) => (
                             <motion.tr
-                                key={order._id} // Change from id to _id
+                                key={order._id}
                                 initial={{ opacity: 0 }}
                                 animate={{ opacity: 1 }}
                                 transition={{ duration: 1.1, delay: 0.2 }}
                             >
                                 <td className='px-6 py-4 whitespace-nowrap'>
-                                    <div className='text-sm font-semibold text-gray-100 tracking-wider'>{order.id}</div>
+                                    <div className='text-sm font-semibold text-gray-100 tracking-wider'>{order._id}</div>
                                 </td>
                                 <td className='px-6 py-4 whitespace-nowrap'>
                                     <div className='text-sm text-gray-300'>{order.user?.user_name}</div>
@@ -194,9 +181,9 @@ const OrdersTable = () => {
                                 </td>
                                 <td className='px-6 py-4 whitespace-nowrap'>
                                     <span className={`px-3 inline-flex rounded-full text-xs leading-5 font-semibold ${
-                                        order.deliveryStatus === "Delivered" ? "bg-green-700 text-green-100" : 
-                                        order.deliveryStatus === "Shipping" ? "bg-blue-700 text-blue-100" : 
-                                        order.deliveryStatus === "Processing" ? "bg-yellow-700 text-yellow-100" : 
+                                        order.deliveryStatus === "Delivered" ? "bg-green-700 text-green-100" :
+                                        order.deliveryStatus === "Shipping" ? "bg-blue-700 text-blue-100" :
+                                        order.deliveryStatus === "Processing" ? "bg-yellow-700 text-yellow-100" :
                                         order.deliveryStatus === "Cancelled" ? "bg-red-700 text-red-100" :
                                         order.deliveryStatus === "Returned" ? "bg-purple-700 text-purple-100" :
                                         "bg-gray-700 text-gray-100"
@@ -220,7 +207,6 @@ const OrdersTable = () => {
                 </table>
             </div>
 
-            {/* Modal and pagination components remain the same */}
             {showModal && (
                 <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
                     <motion.div
@@ -239,7 +225,6 @@ const OrdersTable = () => {
                             </h2>
                         </div>
 
-                        {/* Responsive grid layout for dropdown */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                             <div className="flex flex-col space-y-1">
                                 <label className="text-sm text-gray-300">Current Order Status</label>

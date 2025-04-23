@@ -66,12 +66,6 @@ const ProductsPage = () => {
 
         {/* PRODUCT TABLE */}
         <ProductTable />
-
-        {/* CHARTS */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 mt-5">
-          <SalesTrendChart authHeader={accessToken} />
-          <CategoryDistributionChart authHeader={accessToken} />
-        </div>
       </main>
     </div>
   );

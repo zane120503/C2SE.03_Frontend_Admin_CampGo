@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { motion } from 'framer-motion'
+import { motion } from 'framer-motion';
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend } from "recharts";
 
 const COLORS = ["#6366f1", "#6b8afa", "#ec4899", "#10b981", "#f59e0b"];
@@ -10,16 +10,21 @@ const CategoryDistributionChart = ({ authHeader }) => {
   useEffect(() => {
     const fetchCategoryData = async () => {
       try {
-        const response = await fetch("http://localhost:3000/api/v1/category/distribution", {
+        const response = await fetch("http://localhost:3000/api/categories", {
           headers: {
             'Authorization': authHeader,
             'Content-Type': 'application/json'
           }
         });
 
-        const data = await response.json();
-        if (data.success) {
-          setCategoryData(data.data.distribution);
+        const result = await response.json();
+        if (result.success && Array.isArray(result.data)) {
+          const total = result.data.reduce((sum, item) => sum + item.productCount, 0);
+          const formatted = result.data.map(item => ({
+            category: item._id,
+            percentage: total ? (item.productCount / total) * 100 : 0,
+          }));
+          setCategoryData(formatted);
         }
       } catch (error) {
         console.error("Error fetching category data:", error);
@@ -54,7 +59,9 @@ const CategoryDistributionChart = ({ authHeader }) => {
               fill='#8884d8'
               dataKey="percentage"
               nameKey="category"
-              label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+              label={({ category, percentage }) =>
+                `${category} ${percentage.toFixed(0)}%`
+              }
             >
               {categoryData.map((_, index) => (
                 <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
@@ -75,4 +82,4 @@ const CategoryDistributionChart = ({ authHeader }) => {
   );
 };
 
-export default CategoryDistributionChart
+export default CategoryDistributionChart;

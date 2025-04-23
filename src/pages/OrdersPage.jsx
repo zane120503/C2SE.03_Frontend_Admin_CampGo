@@ -63,11 +63,11 @@ const OrdersPage = () => {
                     <StatCards name="Total Revenue" icon={DollarSign} value={orderStats.totalRevenue} color="#ef4444" />
                 </motion.div>
 
-                {/* DAILY ORDERS and ORDER STATUS DISTRIBUTION CHART */}
+                {/* DAILY ORDERS and ORDER STATUS DISTRIBUTION CHART
                 <div className='grid grid-cols-1 lg:grid-cols-2 gap-5 mb-7'>
                     <DailyOrdersChart />
                     <StatusDistributionChart />
-                </div>
+                </div> */}
 
                 {/* ORDERS TABLE */}
                 <OrdersTable />

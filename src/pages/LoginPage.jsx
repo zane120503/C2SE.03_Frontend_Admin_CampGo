@@ -11,31 +11,30 @@ const LoginPage = () => {
 
     const handleLogin = async (e) => {
         e.preventDefault();
-        
+
         try {
             const response = await fetch('http://localhost:3000/api/auth/login', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ username, password }),
+                body: JSON.stringify({ email: username, password }),
             });
 
             const data = await response.json();
             console.log("Login response:", data);
 
-            if (response.ok) {
-                localStorage.setItem('accessToken', data.accesstoken);
-                
-                const authHeader = `Bearer ${data.accesstoken}`;
-                console.log("Auth header:", authHeader);
-                
-                if (data.user.role === 0) {
+            if (response.ok && data.success) {
+                if (data.user.isAdmin) {
+                    localStorage.setItem('accessToken', data.token);
+
+                    const authHeader = `Bearer ${data.token}`;
+                    console.log("Auth header:", authHeader);
+
                     login(data.user, authHeader);
                     toast.success('Login successful!');
                     navigate('/');
                 } else {
-                    localStorage.removeItem('accessToken');
                     toast.error('Access denied. Admin privileges required.');
                 }
             } else {
