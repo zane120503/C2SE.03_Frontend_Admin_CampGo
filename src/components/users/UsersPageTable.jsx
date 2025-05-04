@@ -156,15 +156,19 @@ const UsersPageTable = () => {
                   </span>
                 </td>
                 <td className="px-4 py-2 flex gap-2">
-                  <button onClick={() => toggleAdmin(user._id)} className="text-blue-400">
-                    <UserCheck size={18} />
-                  </button>
-                  <button onClick={() => toggleBlock(user._id)} className={user.isBlocked ? 'text-green-400' : 'text-red-400'}>
-                    {user.isBlocked ? <Unlock size={18} /> : <Lock size={18} />}
-                  </button>
-                  <button onClick={() => handleDelete(user._id)} className="text-red-500">
-                    <Trash2 size={18} />
-                  </button>
+                  {!user.isAdmin && (
+                    <>
+                      <button onClick={() => toggleAdmin(user._id)} className="text-blue-400">
+                        <UserCheck size={18} />
+                      </button>
+                      <button onClick={() => toggleBlock(user._id)} className={user.isBlocked ? 'text-green-400' : 'text-red-400'}>
+                        {user.isBlocked ? <Unlock size={18} /> : <Lock size={18} />}
+                      </button>
+                      <button onClick={() => handleDelete(user._id)} className="text-red-500">
+                        <Trash2 size={18} />
+                      </button>
+                    </>
+                  )}
                 </td>
               </tr>
             ))}

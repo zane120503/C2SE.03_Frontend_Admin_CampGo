@@ -8,7 +8,7 @@ import { toast } from 'react-toastify';
 
 const ProductTable = () => {
     const [products, setProducts] = useState([]);
-    const [allProducts, setAllProducts] = useState([]); // lưu danh sách gốc
+    const [allProducts, setAllProducts] = useState([]);
     const [categories, setCategories] = useState([]);
     const [loading, setLoading] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
@@ -60,7 +60,7 @@ const ProductTable = () => {
                 }
             );
             setProducts(response.data.products);
-            setAllProducts(response.data.products); // lưu bản gốc
+            setAllProducts(response.data.products);
             setTotalPages(response.data.totalPages);
             setTotalProducts(response.data.totalProducts);
         } catch (error) {
@@ -185,12 +185,15 @@ const ProductTable = () => {
     const handleToggleActive = async (productId, currentStatus) => {
         try {
             const token = localStorage.getItem('accessToken');
-            await axios.put(`http://localhost:3000/api/admin/products/${productId}`, { isActive: !currentStatus }, {
-                headers: {
-                    Authorization: `Bearer ${token}`
+            await axios.patch(`http://localhost:3000/api/admin/products/${productId}/status`, 
+                { isActive: !currentStatus },
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`
+                    }
                 }
-            });
-
+            );
+    
             setProducts(prevProducts =>
                 prevProducts.map(product =>
                     product._id === productId
@@ -198,12 +201,13 @@ const ProductTable = () => {
                         : product
                 )
             );
-
+    
             toast.success(`Product ${currentStatus ? 'deactivated' : 'activated'} successfully`);
         } catch (error) {
             toast.error(error.response?.data?.message || 'Error updating product status');
         }
     };
+    
 
     return (
         <motion.div className="bg-gray-800 bg-opacity-50 shadow-lg backdrop-blur-md rounded-xl p-5 border border-gray-700">
@@ -381,34 +385,33 @@ const ProductModal = ({ title, onClose, onSubmit, product, setProduct, buttonLab
                         const files = Array.from(e.target.files);
                         setProduct(prev => ({
                             ...prev,
-                            images: files
+                            images: [...prev.images, ...files] 
                         }));
                     }}
                     className="block w-full text-sm text-gray-300 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-purple-600 file:text-white hover:file:bg-purple-700"
                 />
                 <div className="mt-2 flex flex-wrap gap-3">
-                {product.images && Array.isArray(product.images) && product.images.map((img, idx) => (
-                    <div key={idx} className="relative group">
-                        <img
-                            src={typeof img === 'string' ? img : URL.createObjectURL(img)}
-                            alt={`preview-${idx}`}
-                            className="h-16 w-16 object-cover rounded"
-                        />
-                        <button
-                            type="button"
-                            onClick={() => {
-                                setProduct(prev => ({
-                                    ...prev,
-                                    images: prev.images.filter((_, i) => i !== idx)
-                                }));
-                            }}
-                            className="absolute top-0 right-0 bg-black bg-opacity-60 text-white rounded-full p-0.5 group-hover:visible invisible"
-                        >
-                            <X size={16} />
-                        </button>
-                    </div>
-                ))}
-
+                    {product.images && Array.isArray(product.images) && product.images.map((img, idx) => (
+                        <div key={idx} className="relative group">
+                            <img
+                                src={typeof img === 'string' ? img : URL.createObjectURL(img)} 
+                                alt={`preview-${idx}`}
+                                className="h-16 w-16 object-cover rounded"
+                            />
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setProduct(prev => ({
+                                        ...prev,
+                                        images: prev.images.filter((_, i) => i !== idx) 
+                                    }));
+                                }}
+                                className="absolute top-0 right-0 bg-black bg-opacity-60 text-white rounded-full p-0.5 group-hover:visible invisible"
+                            >
+                                <X size={16} />
+                            </button>
+                        </div>
+                    ))}
                 </div>
             </div>
             <div className="flex gap-4 mt-4">

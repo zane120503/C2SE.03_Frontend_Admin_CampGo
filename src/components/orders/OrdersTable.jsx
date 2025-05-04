@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { ChevronLeft, ChevronRight, Search, Eye, CheckCircle } from 'lucide-react';
 import axios from 'axios';
+import { toast } from 'react-toastify';
 
 const OrderDetailsModal = ({ order, onClose }) => {
   if (!order) return null;
@@ -160,18 +161,27 @@ const OrdersTable = () => {
           }
         }
       );
-
+  
       if (response.status === 200) {
-        setOrders(orders.map(order =>
-          order._id === orderId ? { ...order, waiting_confirmation: true } : order
-        ));
+        const updatedResponse = await axios.get(`http://localhost:3000/api/admin/orders`, {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+          }
+        });
+  
+        if (updatedResponse.data) {
+          setOrders(updatedResponse.data);  
+          setFilteredOrders(updatedResponse.data); 
+          toast.success('Order accepted and table reloaded!');
+        }
       }
     } catch (error) {
       setApiError('Failed to accept order, please try again later.');
       console.error('Error accepting order:', error);
+      toast.error('Error accepting order');
     }
   };
-
+  
   return (
     <>
       <motion.div

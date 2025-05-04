@@ -1,3 +1,5 @@
+/* eslint-disable no-unused-vars */
+/* eslint-disable react/prop-types */
 import React, { useEffect, useState } from 'react';
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
@@ -70,7 +72,7 @@ const SaleOverviewChart = ({ authHeader }) => {
               itemStyle={{ color: "#e5e7eb" }}
             />
             <Line
-              type="monotone"
+              type="linear"
               dataKey='revenue'
               stroke='#6366f1'
               strokeWidth={3}

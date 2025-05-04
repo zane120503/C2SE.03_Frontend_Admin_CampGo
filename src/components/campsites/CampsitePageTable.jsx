@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 /* eslint-disable react/prop-types */
 import React, { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
@@ -183,16 +184,25 @@ const CampsitePageTable = () => {
     const handleToggleActive = async (campsiteId, currentStatus) => {
         try {
             const token = localStorage.getItem('accessToken');
-            await axios.put(`http://localhost:3000/api/admin/campsites/${campsiteId}`, { isActive: !currentStatus }, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-
-            setCampsites(prevCampsites => prevCampsites.map(campsite => campsite._id === campsiteId ? { ...campsite, isActive: !currentStatus } : campsite));
+            await axios.patch(`http://localhost:3000/api/admin/campsites/${campsiteId}/status`, 
+                { isActive: !currentStatus }, 
+                {
+                    headers: { Authorization: `Bearer ${token}` }
+                }
+            );
+            setCampsites(prevCampsites => 
+                prevCampsites.map(campsite => 
+                    campsite._id === campsiteId 
+                    ? { ...campsite, isActive: !currentStatus } 
+                    : campsite
+                )
+            );
             toast.success(`Campsite ${currentStatus ? 'deactivated' : 'activated'} successfully`);
         } catch (error) {
             toast.error(error.response?.data?.message || 'Error updating campsite status');
         }
     };
+    
 
     const handleAddFacility = () => {
         setNewCampsite(prevState => ({
