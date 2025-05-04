@@ -1,48 +1,45 @@
 import React, { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { CheckCircle, Clock, DollarSign, ShoppingBag } from 'lucide-react'
+import { ShoppingBag } from 'lucide-react'
 import axios from 'axios'
 import { toast } from 'react-toastify'
 
 import Header from '../components/common_components/Header'
 import StatCards from '../components/common_components/StatCards'
-import DailyOrdersChart from "../components/orders/DailyOrdersChart"
-import StatusDistributionChart from '../components/orders/StatusDistributionChart'
 import OrdersTable from '../components/orders/OrdersTable'
 
 const OrdersPage = () => {
     const [orderStats, setOrderStats] = useState({
         totalOrders: 0,
-        pendingOrders: 0,
-        completedOrders: 0,
-        totalRevenue: 0,
     })
     const [loading, setLoading] = useState(true)
 
     useEffect(() => {
-        const fetchOrderStats = async () => {
+        const fetchOrders = async () => {
             try {
                 const token = localStorage.getItem('accessToken')
                 console.log("token", token)
                 const response = await axios.get(
-                    'http://localhost:3000/api/v1/orders/stats',
+                    'http://localhost:3000/api/admin/orders', // Keep the existing API endpoint for orders
                     {
                         headers: {
                             Authorization: `Bearer ${token}`
                         }
                     }
                 )
-                console.log("orderStats", response.data.stats)
-                setOrderStats(response.data.stats)
+                console.log("orders", response.data) // List of orders
+                setOrderStats({
+                    totalOrders: response.data.length, // Total orders is simply the length of the array
+                })
                 
             } catch (error) {
-                console.error('Error fetching order stats:', error)
+                console.error('Error fetching orders:', error)
                 toast.error('Failed to load order statistics')
             } finally {
                 setLoading(false)
             }
         }
-        fetchOrderStats()
+        fetchOrders()
     }, [])
 
     return (
@@ -58,16 +55,7 @@ const OrdersPage = () => {
                     transition={{ duration: 1 }}
                 >
                     <StatCards name="Total Orders" icon={ShoppingBag} value={orderStats.totalOrders} color="#6366f1" />
-                    <StatCards name="Pending Orders" icon={Clock} value={orderStats.pendingOrders} color="#10b981" />
-                    <StatCards name="Completed Orders" icon={CheckCircle} value={orderStats.completedOrders} color="#f59e0b" />
-                    <StatCards name="Total Revenue" icon={DollarSign} value={orderStats.totalRevenue} color="#ef4444" />
                 </motion.div>
-
-                {/* DAILY ORDERS and ORDER STATUS DISTRIBUTION CHART
-                <div className='grid grid-cols-1 lg:grid-cols-2 gap-5 mb-7'>
-                    <DailyOrdersChart />
-                    <StatusDistributionChart />
-                </div> */}
 
                 {/* ORDERS TABLE */}
                 <OrdersTable />

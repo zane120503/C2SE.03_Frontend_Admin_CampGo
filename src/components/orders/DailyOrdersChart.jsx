@@ -13,7 +13,7 @@ const DailyOrdersChart = () => {
             try {
                 const token = localStorage.getItem('accessToken')
                 const response = await axios.get(
-                    'http://localhost:3000/api/v1/orders/daily',
+                    'http://localhost:3000/api/admin/orders/daily',
                     {
                         headers: {
                             Authorization: `Bearer ${token}`

@@ -10,6 +10,7 @@ import CampsitePageTable from '../components/campsites/CampsitePageTable';
 
 const CampsitePage = () => {
   const [campsites, setCampsites] = useState([]);
+  const [totalCampsites, setTotalCampsites] = useState(0);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -24,7 +25,8 @@ const CampsitePage = () => {
             }
           }
         );
-        setCampsites(response.data.data || []);
+        setCampsites(response.data.campsites || []);
+        setTotalCampsites(response.data.totalCampsites || 0);
       } catch (error) {
         console.error('Error fetching campsites:', error);
         toast.error('Failed to load campsites');
@@ -40,20 +42,8 @@ const CampsitePage = () => {
     {
       name: "Total Campsites",
       icon: MapPin,
-      value: loading ? '-' : campsites.length.toLocaleString(),
+      value: loading ? '-' : totalCampsites.toLocaleString(),
       color: "#6366f1"
-    },
-    // {
-    //   name: "New Campsites Today",
-    //   icon: MapPin,
-    //   value: '-', // Optional: Add a separate API for this or remove it
-    //   color: "#10b981"
-    // },
-    {
-      name: "Active Campsites",
-      icon: MapPin,
-      value: loading ? '-' : campsites.filter(c => c.status === 'active').length,
-      color: "#f59e0b"
     }
   ];
 

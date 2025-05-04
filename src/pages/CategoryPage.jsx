@@ -19,14 +19,15 @@ const CategoryPage = () => {
             try {
                 const token = localStorage.getItem('accessToken');
                 const response = await axios.get(
-                    'http://localhost:3000/api/v1/categories/dashboard',
+                    'http://localhost:3000/api/admin/categories',
                     {
                         headers: {
                             Authorization: `Bearer ${token}`
                         }
                     }
                 );
-                setCategoryStats(response.data.data);
+                const { totalCategories } = response.data;
+                setCategoryStats({ totalCategories });
             } catch (error) {
                 console.error('Error fetching category stats:', error);
                 toast.error('Failed to load category statistics');

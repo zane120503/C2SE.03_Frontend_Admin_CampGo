@@ -1,3 +1,5 @@
+/* eslint-disable react/prop-types */
+/* eslint-disable no-unused-vars */
 import React, { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { ChevronLeft, ChevronRight, Edit, Search, Trash2, Plus, X, Loader2, CheckCircle, XCircle } from 'lucide-react';
@@ -6,6 +8,7 @@ import { toast } from 'react-toastify';
 
 const ProductTable = () => {
     const [products, setProducts] = useState([]);
+    const [allProducts, setAllProducts] = useState([]); // lưu danh sách gốc
     const [categories, setCategories] = useState([]);
     const [loading, setLoading] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
@@ -14,7 +17,7 @@ const ProductTable = () => {
     const [totalProducts, setTotalProducts] = useState(0);
     const [isEditModalOpen, setEditModalOpen] = useState(false);
     const [isAddModalOpen, setAddModalOpen] = useState(false);
-    
+
     const [editProduct, setEditProduct] = useState({
         _id: '',
         productName: '',
@@ -26,6 +29,7 @@ const ProductTable = () => {
         discount: '',
         sold: 0,
         isActive: true,
+        images: []
     });
 
     const [newProduct, setNewProduct] = useState({
@@ -41,6 +45,10 @@ const ProductTable = () => {
         images: []
     });
 
+    const removeVietnameseTones = (str) => {
+        return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+    };
+
     const fetchProducts = useCallback(async () => {
         setLoading(true);
         try {
@@ -52,8 +60,9 @@ const ProductTable = () => {
                 }
             );
             setProducts(response.data.products);
-            setTotalPages(response.data.pagination.totalPages);
-            setTotalProducts(response.data.pagination.totalProducts);
+            setAllProducts(response.data.products); // lưu bản gốc
+            setTotalPages(response.data.totalPages);
+            setTotalProducts(response.data.totalProducts);
         } catch (error) {
             toast.error('Error fetching products');
         } finally {
@@ -63,7 +72,13 @@ const ProductTable = () => {
 
     const fetchCategories = async () => {
         try {
-            const response = await axios.get('http://localhost:3000/api/admin/categories');
+            const token = localStorage.getItem('accessToken');
+            const response = await axios.get(
+                'http://localhost:3000/api/admin/categories',
+                {
+                    headers: { Authorization: `Bearer ${token}` }
+                }
+            );
             setCategories(response.data.categories);
         } catch (error) {
             toast.error('Failed to load categories');
@@ -76,8 +91,19 @@ const ProductTable = () => {
     }, [fetchProducts]);
 
     const handleSearch = (e) => {
-        setSearchTerm(e.target.value);
+        const value = e.target.value;
+        setSearchTerm(value);
         setCurrentPage(1);
+
+        const normalizedSearchTerm = removeVietnameseTones(value.toLowerCase());
+
+        const filtered = allProducts.filter((product) => {
+            const name = removeVietnameseTones(product.productName?.toLowerCase() || '');
+            const brand = removeVietnameseTones(product.brand?.toLowerCase() || '');
+            return name.includes(normalizedSearchTerm) || brand.includes(normalizedSearchTerm);
+        });
+
+        setProducts(filtered);
     };
 
     const handleAddProduct = async () => {
@@ -107,7 +133,10 @@ const ProductTable = () => {
     };
 
     const handleEdit = (product) => {
-        setEditProduct(product);
+        setEditProduct({
+            ...product,
+            images: product.images?.map(img => img.url) || []
+        });
         setEditModalOpen(true);
     };
 
@@ -116,7 +145,13 @@ const ProductTable = () => {
             const token = localStorage.getItem('accessToken');
             const formData = new FormData();
             Object.entries(editProduct).forEach(([key, value]) => {
-                formData.append(key, value);
+                if (key === 'images') {
+                    value.forEach(img => {
+                        if (typeof img !== 'string') formData.append('images', img);
+                    });
+                } else {
+                    formData.append(key, value);
+                }
             });
             await axios.put(`http://localhost:3000/api/admin/products/${editProduct._id}`, formData, {
                 headers: {
@@ -155,8 +190,16 @@ const ProductTable = () => {
                     Authorization: `Bearer ${token}`
                 }
             });
+
+            setProducts(prevProducts =>
+                prevProducts.map(product =>
+                    product._id === productId
+                        ? { ...product, isActive: !currentStatus }
+                        : product
+                )
+            );
+
             toast.success(`Product ${currentStatus ? 'deactivated' : 'activated'} successfully`);
-            fetchProducts();
         } catch (error) {
             toast.error(error.response?.data?.message || 'Error updating product status');
         }
@@ -171,7 +214,7 @@ const ProductTable = () => {
                         <Search className='absolute left-3 text-gray-400' size={20} />
                         <input
                             type="text"
-                            placeholder='Search products...'
+                            placeholder='Search product or brand...'
                             className='pl-10 pr-4 py-2 bg-gray-700 rounded-lg text-gray-100'
                             value={searchTerm}
                             onChange={handleSearch}
@@ -229,7 +272,7 @@ const ProductTable = () => {
                                             <span className='text-red-500 font-medium'>Inactive</span>
                                         )}
                                     </td>
-                                    <td className='px-6 py-4 flex space-x-3'>
+                                    <td className='px-6 py-4 flex space-x-3 pt-8'>
                                         <button onClick={() => handleEdit(product)} className='text-indigo-400 hover:text-indigo-300'>
                                             <Edit size={18} />
                                         </button>
@@ -298,51 +341,79 @@ const ProductModal = ({ title, onClose, onSubmit, product, setProduct, buttonLab
                     <X />
                 </button>
             </div>
-            {[
-                { name: 'productName', label: 'Product Name' },
-                { name: 'description', label: 'Description' },
-                { name: 'price', label: 'Price', type: 'number' },
-                { name: 'stockQuantity', label: 'Stock Quantity', type: 'number' },
-                { name: 'brand', label: 'Brand' },
-                { name: 'discount', label: 'Discount', type: 'number' },
-            ].map(field => (
+            {[{ name: 'productName', label: 'Product Name' },
+              { name: 'description', label: 'Description' },
+              { name: 'price', label: 'Price', type: 'number' },
+              { name: 'stockQuantity', label: 'Stock Quantity', type: 'number' },
+              { name: 'brand', label: 'Brand' },
+              { name: 'discount', label: 'Discount', type: 'number' }]
+              .map(field => (
                 <div key={field.name}>
-                    <label className="block text-sm text-gray-400 mb-1">{field.label}</label>
+                    <label className="block text-sm text-gray-400 mb-2">{field.label}</label>
                     <input
                         type={field.type || 'text'}
-                        className="w-full px-3 py-2 bg-gray-700 text-white rounded-lg"
+                        className="w-full px-4 py-2 rounded-lg text-gray-100 bg-gray-700"
                         value={product[field.name]}
-                        onChange={(e) => setProduct(prev => ({ ...prev, [field.name]: field.type === 'number' ? Number(e.target.value) : e.target.value }))}
+                        onChange={e => setProduct({ ...product, [field.name]: e.target.value })}
                     />
                 </div>
             ))}
             <div>
-                <label className="block text-sm text-gray-400 mb-1">Category</label>
+                <label className="block text-sm text-gray-400 mb-2">Category</label>
                 <select
-                    className="w-full px-3 py-2 bg-gray-700 text-white rounded-lg"
                     value={product.categoryID}
-                    onChange={(e) => setProduct(prev => ({ ...prev, categoryID: e.target.value }))}
+                    onChange={e => setProduct({ ...product, categoryID: e.target.value })}
+                    className="w-full px-4 py-2 rounded-lg text-gray-100 bg-gray-700"
                 >
-                    <option value="">Select a category</option>
-                    {Array.isArray(categories) && categories.map(cat => (
-                        <option key={cat._id} value={cat._id}>{cat.name}</option>
+                    <option value="">Select Category</option>
+                    {categories.map(category => (
+                        <option key={category._id} value={category._id}>{category.categoryName}</option>
                     ))}
-
                 </select>
             </div>
             <div>
-                <label className="block text-sm text-gray-400 mb-1">Images (max 5)</label>
+                <label className="block text-sm text-gray-400 mb-2">Images</label>
                 <input
                     type="file"
-                    multiple
                     accept="image/*"
-                    onChange={(e) => setProduct(prev => ({ ...prev, images: [...e.target.files].slice(0, 5) }))}
-                    className="w-full px-3 py-2 bg-gray-700 text-white rounded-lg"
+                    multiple
+                    onChange={(e) => {
+                        const files = Array.from(e.target.files);
+                        setProduct(prev => ({
+                            ...prev,
+                            images: files
+                        }));
+                    }}
+                    className="block w-full text-sm text-gray-300 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-purple-600 file:text-white hover:file:bg-purple-700"
                 />
+                <div className="mt-2 flex flex-wrap gap-3">
+                {product.images && Array.isArray(product.images) && product.images.map((img, idx) => (
+                    <div key={idx} className="relative group">
+                        <img
+                            src={typeof img === 'string' ? img : URL.createObjectURL(img)}
+                            alt={`preview-${idx}`}
+                            className="h-16 w-16 object-cover rounded"
+                        />
+                        <button
+                            type="button"
+                            onClick={() => {
+                                setProduct(prev => ({
+                                    ...prev,
+                                    images: prev.images.filter((_, i) => i !== idx)
+                                }));
+                            }}
+                            className="absolute top-0 right-0 bg-black bg-opacity-60 text-white rounded-full p-0.5 group-hover:visible invisible"
+                        >
+                            <X size={16} />
+                        </button>
+                    </div>
+                ))}
+
+                </div>
             </div>
-            <button onClick={onSubmit} className={`w-full ${buttonColor} text-white py-2 rounded-lg font-medium`}>
-                {buttonLabel}
-            </button>
+            <div className="flex gap-4 mt-4">
+                <button onClick={onSubmit} className={`px-6 py-2 ${buttonColor} text-white rounded-lg`}>{buttonLabel}</button>
+            </div>
         </motion.div>
     </motion.div>
 );

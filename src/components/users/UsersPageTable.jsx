@@ -25,19 +25,19 @@ const UsersPageTable = () => {
     try {
       const token = localStorage.getItem('accessToken');
       const response = await axios.get(`http://localhost:3000/api/admin/users`, {
-        headers: { Authorization: `Bearer ${token}` }
+        headers: { Authorization: `Bearer ${token}` },
+        params: {
+          page: currentPage,
+          search: searchTerm,
+          limit: 5, // Adjust page size here
+          sortBy: 'createdAt',
+          sortOrder: 'desc'
+        }
       });
-      const filtered = response.data.filter(user =>
-        user.user_name.toLowerCase().includes(searchTerm.toLowerCase())
-      );
 
-      const itemsPerPage = 5;
-      const start = (currentPage - 1) * itemsPerPage;
-      const paginated = filtered.slice(start, start + itemsPerPage);
-
-      setUsers(paginated);
-      setTotalUsers(filtered.length);
-      setTotalPages(Math.ceil(filtered.length / itemsPerPage));
+      setUsers(response.data.users);
+      setTotalUsers(response.data.totalUsers);
+      setTotalPages(response.data.totalPages);
     } catch (error) {
       toast.error('Error fetching users');
     } finally {
@@ -150,13 +150,17 @@ const UsersPageTable = () => {
                 <td className="px-4 py-2">{user.user_name}</td>
                 <td className="px-4 py-2">{user.email}</td>
                 <td className="px-4 py-2">{user.isAdmin ? 'Admin' : 'Customer'}</td>
-                <td className="px-4 py-2">{user.status}</td>
+                <td className="px-4 py-2">
+                  <span className={user.isBlocked ? 'text-red-500' : 'text-green-500'}>
+                    {user.isBlocked ? 'Blocked' : 'Active'}
+                  </span>
+                </td>
                 <td className="px-4 py-2 flex gap-2">
                   <button onClick={() => toggleAdmin(user._id)} className="text-blue-400">
-                    <UserCheck size={18} /> {/* Updated to UserCheck */}
+                    <UserCheck size={18} />
                   </button>
-                  <button onClick={() => toggleBlock(user._id)} className="text-yellow-400">
-                    {user.status === 'Active' ? <Lock size={18} /> : <Unlock size={18} />}
+                  <button onClick={() => toggleBlock(user._id)} className={user.isBlocked ? 'text-green-400' : 'text-red-400'}>
+                    {user.isBlocked ? <Unlock size={18} /> : <Lock size={18} />}
                   </button>
                   <button onClick={() => handleDelete(user._id)} className="text-red-500">
                     <Trash2 size={18} />

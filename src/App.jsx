@@ -9,7 +9,6 @@ import ProductsPage from './pages/ProductsPage'
 import UsersPage from './pages/UsersPage'
 import CampsitePage from './pages/CampsitePage'
 import OrdersPage from './pages/OrdersPage'
-import AnalyticsPage from './pages/AnalyticsPage'
 import SettingsPage from './pages/SettingsPage'
 import CategoryPage from './pages/CategoryPage'
 
@@ -89,17 +88,6 @@ const App = () => {
             element={
               isAuthenticated ? (
                 <OrdersPage />
-              ) : (
-                <Navigate to="/login" replace />
-              )
-            }
-          />
-          
-          <Route
-            path="/analytics"
-            element={
-              isAuthenticated ? (
-                <AnalyticsPage />
               ) : (
                 <Navigate to="/login" replace />
               )

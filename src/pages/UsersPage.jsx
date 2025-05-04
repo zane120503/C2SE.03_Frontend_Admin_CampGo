@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { UserCheck, UserIcon, UserPlus, UserX } from 'lucide-react'
+import { UserCheck, UserIcon } from 'lucide-react'
 import axios from 'axios'
 import { toast } from 'react-toastify'
 
@@ -11,9 +11,6 @@ import UsersPageTable from '../components/users/UsersPageTable'
 const UsersPage = () => {
   const [userStats, setUserStats] = useState({
     totalUsers: 0,
-    newUsersToday: 0,
-    activeUsers: 0,
-    churnRate: "0%"
   });
   const [loading, setLoading] = useState(true);
 
@@ -22,7 +19,7 @@ const UsersPage = () => {
       try {
         const token = localStorage.getItem('accessToken');
         const response = await axios.get(
-          'http://localhost:3000/api/admin/users',
+          'http://localhost:3000/api/admin/users', // Using the updated API URL
           {
             headers: {
               Authorization: `Bearer ${token}`
@@ -30,25 +27,11 @@ const UsersPage = () => {
           }
         );
 
-        const users = response.data.data || [];
-
-        // Tính toán các giá trị thống kê
-        const totalUsers = users.length;
-
-        const today = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
-        const newUsersToday = users.filter(user => user.createdAt?.slice(0, 10) === today).length;
-
-        const activeUsers = users.filter(user => !user.isBlocked).length;
-
-        const churnRate = totalUsers > 0
-          ? ((totalUsers - activeUsers) / totalUsers * 100).toFixed(2) + '%'
-          : '0%';
+        // Extract totalUsers from the response
+        const totalUsers = response.data.totalUsers || 0;
 
         setUserStats({
           totalUsers,
-          newUsersToday,
-          activeUsers,
-          churnRate
         });
       } catch (error) {
         console.error('Error fetching user stats:', error);
@@ -67,24 +50,6 @@ const UsersPage = () => {
       icon: UserIcon,
       value: loading ? '-' : userStats.totalUsers.toLocaleString(),
       color: "#6366f1"
-    },
-    {
-      name: "New Users Today",
-      icon: UserPlus,
-      value: loading ? '-' : userStats.newUsersToday.toLocaleString(),
-      color: "#10b981"
-    },
-    {
-      name: "Active Users",
-      icon: UserCheck,
-      value: loading ? '-' : userStats.activeUsers.toLocaleString(),
-      color: "#3b82f6"
-    },
-    {
-      name: "Churn Rate",
-      icon: UserX,
-      value: loading ? '-' : userStats.churnRate,
-      color: "#ef4444"
     },
   ];
 

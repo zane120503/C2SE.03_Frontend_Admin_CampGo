@@ -1,16 +1,16 @@
+/* eslint-disable react/prop-types */
+/* eslint-disable no-unused-vars */
 import React, { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import { ChevronLeft, ChevronRight, Edit, Trash2, Plus, X, Search, Loader2 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Edit, Trash2, Plus, X, Search, Loader2, CheckCircle, XCircle } from 'lucide-react';
 import axios from 'axios';
 import { toast } from 'react-toastify';
 
 const CategoryTable = () => {
   const [categories, setCategories] = useState([]);
+  const [filteredCategories, setFilteredCategories] = useState([]);
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(0);
-  const [totalCategories, setTotalCategories] = useState(0);
 
   const [isAddModalOpen, setAddModalOpen] = useState(false);
   const [isEditModalOpen, setEditModalOpen] = useState(false);
@@ -18,50 +18,63 @@ const CategoryTable = () => {
   const [newCategory, setNewCategory] = useState({
     categoryName: '',
     description: '',
-    image: null,
+    image: [],
+    imagePreview: [],
+    isActive: true,
   });
 
   const [editCategory, setEditCategory] = useState({
     _id: '',
     categoryName: '',
     description: '',
-    image: null,
+    image: [],
+    imagePreview: [],
+    isActive: true,
   });
 
   const fetchCategories = useCallback(async () => {
     setLoading(true);
     try {
       const token = localStorage.getItem('accessToken');
-      const res = await axios.get(
-        `http://localhost:3000/api/admin/categories?page=${currentPage}&search=${searchTerm}`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      setCategories(res.data.data.categories);
-      setTotalPages(res.data.data.pagination.totalPages);
-      setTotalCategories(res.data.data.pagination.totalCategories);
+      const res = await axios.get('http://localhost:3000/api/admin/categories', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const categoriesData = res.data.categories || [];
+      setCategories(categoriesData);
+      setFilteredCategories(categoriesData);
     } catch (err) {
       toast.error('Failed to fetch categories');
     } finally {
       setLoading(false);
     }
-  }, [currentPage, searchTerm]);
+  }, []);
 
   useEffect(() => {
     fetchCategories();
   }, [fetchCategories]);
 
+  const removeVietnameseTones = (str) => {
+    return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+  };
+
   const handleSearch = (e) => {
-    setSearchTerm(e.target.value);
-    setCurrentPage(1);
+    const value = e.target.value;
+    setSearchTerm(value);
+    const normalizedSearchTerm = removeVietnameseTones(value);
+    const filtered = categories.filter((cat) =>
+      removeVietnameseTones(cat.categoryName).includes(normalizedSearchTerm)
+    );
+    setFilteredCategories(filtered);
   };
 
   const handleAddCategory = async () => {
     const formData = new FormData();
     formData.append('categoryName', newCategory.categoryName);
     formData.append('description', newCategory.description);
-    if (newCategory.image) {
-      formData.append('image', newCategory.image);
-    }
+    formData.append('isActive', newCategory.isActive);
+    newCategory.image.forEach((file) => {
+      formData.append('image', file);
+    });
 
     try {
       const token = localStorage.getItem('accessToken');
@@ -73,7 +86,7 @@ const CategoryTable = () => {
       });
       toast.success('Category added successfully');
       setAddModalOpen(false);
-      setNewCategory({ categoryName: '', description: '', image: null });
+      setNewCategory({ categoryName: '', description: '', image: [], imagePreview: [], isActive: true });
       fetchCategories();
     } catch (err) {
       toast.error(err.response?.data?.message || 'Add failed');
@@ -81,7 +94,14 @@ const CategoryTable = () => {
   };
 
   const handleEdit = (category) => {
-    setEditCategory({ ...category, image: null });
+    setEditCategory({
+      _id: category._id,
+      categoryName: category.categoryName,
+      description: category.description,
+      image: [],
+      imagePreview: category.image?.url ? [category.image.url] : [],
+      isActive: category.isActive,
+    });
     setEditModalOpen(true);
   };
 
@@ -89,22 +109,22 @@ const CategoryTable = () => {
     const formData = new FormData();
     formData.append('categoryName', editCategory.categoryName);
     formData.append('description', editCategory.description);
-    if (editCategory.image) {
-      formData.append('image', editCategory.image);
-    }
+    formData.append('isActive', editCategory.isActive);
+
+    editCategory.image.forEach((file) => {
+      if (file instanceof File) {
+        formData.append('image', file);
+      }
+    });
 
     try {
       const token = localStorage.getItem('accessToken');
-      await axios.put(
-        `http://localhost:3000/api/admin/categories/${editCategory._id}`,
-        formData,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'multipart/form-data',
-          },
-        }
-      );
+      await axios.put(`http://localhost:3000/api/admin/categories/${editCategory._id}`, formData, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'multipart/form-data',
+        },
+      });
       toast.success('Category updated');
       setEditModalOpen(false);
       fetchCategories();
@@ -125,6 +145,23 @@ const CategoryTable = () => {
       } catch (err) {
         toast.error(err.response?.data?.message || 'Delete failed');
       }
+    }
+  };
+
+  const toggleCategoryStatus = async (id, isActive) => {
+    try {
+      const token = localStorage.getItem('accessToken');
+      await axios.patch(
+        `http://localhost:3000/api/admin/categories/${id}/status`,
+        { isActive: !isActive },
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+      toast.success('Category status updated');
+      fetchCategories();
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Status update failed');
     }
   };
 
@@ -162,22 +199,48 @@ const CategoryTable = () => {
           <table className="min-w-full divide-y divide-gray-700">
             <thead>
               <tr>
+                <th className="px-6 py-3 text-left text-sm font-medium text-gray-300">Image</th>
                 <th className="px-6 py-3 text-left text-sm font-medium text-gray-300">Name</th>
                 <th className="px-6 py-3 text-left text-sm font-medium text-gray-300">Description</th>
+                <th className="px-6 py-3 text-left text-sm font-medium text-gray-300">Status</th>
                 <th className="px-6 py-3 text-left text-sm font-medium text-gray-300">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-700">
-              {categories.map((category) => (
+              {filteredCategories.map((category) => (
                 <motion.tr
                   key={category._id}
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ duration: 0.4 }}
                 >
+                  <td className="px-6 py-4">
+                    <img
+                      src={category.image?.url}
+                      alt={category.categoryName}
+                      className="w-16 h-16 object-cover rounded-md"
+                    />
+                  </td>
                   <td className="px-6 py-4 text-gray-100">{category.categoryName}</td>
                   <td className="px-6 py-4 text-gray-400">{category.description}</td>
-                  <td className="px-6 py-4 flex space-x-3">
+                  <td className="px-6 py-4 text-gray-100">
+                    {category.isActive ? (
+                      <span className="bg-green-700 text-green-100 px-3 py-1 rounded-full text-sm">
+                        Active
+                      </span>
+                    ) : (
+                      <span className="bg-red-700 text-red-100 px-3 py-1 rounded-full text-sm">
+                        Inactive
+                      </span>
+                    )}
+                  </td>
+                  <td className="px-6 py-4 flex space-x-3 pt-9">
+                    <button
+                      onClick={() => toggleCategoryStatus(category._id, category.isActive)}
+                      className="px-3 py-1 rounded-full text-sm bg-gray-600 hover:bg-gray-500 text-white"
+                    >
+                      {category.isActive ? <XCircle size={18} /> : <CheckCircle size={18} />}
+                    </button>
                     <button
                       onClick={() => handleEdit(category)}
                       className="text-blue-400 hover:text-blue-300"
@@ -198,26 +261,8 @@ const CategoryTable = () => {
         </div>
       )}
 
-      <div className="mt-4 flex justify-between items-center">
-        <span className="text-gray-400">
-          Showing {categories.length} of {totalCategories} categories
-        </span>
-        <div className="flex gap-2">
-          <button
-            onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-            disabled={currentPage === 1}
-            className="p-2 bg-gray-700 rounded-lg disabled:opacity-50"
-          >
-            <ChevronLeft size={20} />
-          </button>
-          <button
-            onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
-            disabled={currentPage === totalPages}
-            className="p-2 bg-gray-700 rounded-lg disabled:opacity-50"
-          >
-            <ChevronRight size={20} />
-          </button>
-        </div>
+      <div className="mt-4 text-gray-400">
+        Showing {filteredCategories.length} categories
       </div>
 
       {isAddModalOpen && (
@@ -228,7 +273,7 @@ const CategoryTable = () => {
           category={newCategory}
           setCategory={setNewCategory}
           buttonLabel="Add Category"
-          buttonColor="bg-green-600 hover:bg-green-700"
+          buttonColor="bg-green-600"
         />
       )}
 
@@ -240,7 +285,7 @@ const CategoryTable = () => {
           category={editCategory}
           setCategory={setEditCategory}
           buttonLabel="Update Category"
-          buttonColor="bg-blue-600 hover:bg-blue-700"
+          buttonColor="bg-blue-600"
         />
       )}
     </motion.div>
@@ -249,8 +294,22 @@ const CategoryTable = () => {
 
 const CategoryModal = ({ title, onClose, onSubmit, category, setCategory, buttonLabel, buttonColor }) => {
   const handleFileChange = (e) => {
-    const file = e.target.files[0];
-    setCategory((prev) => ({ ...prev, image: file }));
+    const files = Array.from(e.target.files);
+    const previews = files.map((file) => URL.createObjectURL(file));
+
+    setCategory((prev) => ({
+      ...prev,
+      image: [...prev.image, ...files],
+      imagePreview: [...prev.imagePreview, ...previews],
+    }));
+  };
+
+  const handleRemoveImage = (index) => {
+    setCategory((prev) => {
+      const updatedFiles = prev.image.filter((_, i) => i !== index);
+      const updatedPreviews = prev.imagePreview.filter((_, i) => i !== index);
+      return { ...prev, image: updatedFiles, imagePreview: updatedPreviews };
+    });
   };
 
   return (
@@ -258,52 +317,70 @@ const CategoryModal = ({ title, onClose, onSubmit, category, setCategory, button
       className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-start justify-center pt-2 z-50"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
+      transition={{ duration: 0.3 }}
     >
-      <motion.div
-        className="bg-gray-800 rounded-xl shadow-xl w-full max-w-lg p-6 space-y-4"
-        initial={{ scale: 0.8 }}
-        animate={{ scale: 1 }}
-      >
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-semibold text-white">{title}</h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-red-400">
-            <X />
+      <div className="bg-gray-800 text-gray-100 rounded-lg w-96 p-6">
+        <div className="flex justify-between items-center">
+          <h3 className="text-lg font-semibold">{title}</h3>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-300">
+            <X size={20} />
           </button>
         </div>
-        <div>
-          <label className="block text-sm text-gray-400 mb-1">Category Name</label>
+
+        <div className="mt-4">
+          <label className="block text-sm">Category Name</label>
           <input
             type="text"
-            className="w-full px-3 py-2 bg-gray-700 text-white rounded-lg"
             value={category.categoryName}
-            onChange={(e) => setCategory((prev) => ({ ...prev, categoryName: e.target.value }))}
+            onChange={(e) => setCategory({ ...category, categoryName: e.target.value })}
+            className="w-full mt-2 px-4 py-2 bg-gray-700 text-gray-100 rounded-md"
+            required
           />
         </div>
-        <div>
-          <label className="block text-sm text-gray-400 mb-1">Description</label>
-          <input
-            type="text"
-            className="w-full px-3 py-2 bg-gray-700 text-white rounded-lg"
+
+        <div className="mt-4">
+          <label className="block text-sm">Description</label>
+          <textarea
             value={category.description}
-            onChange={(e) => setCategory((prev) => ({ ...prev, description: e.target.value }))}
+            onChange={(e) => setCategory({ ...category, description: e.target.value })}
+            className="w-full mt-2 px-4 py-2 bg-gray-700 text-gray-100 rounded-md"
           />
         </div>
-        <div>
-          <label className="block text-sm text-gray-400 mb-1">Upload Image</label>
+
+        <div className="mt-4">
+          <label className="block text-sm">Category Image(s)</label>
           <input
             type="file"
-            accept="image/*"
+            multiple
             onChange={handleFileChange}
-            className="text-white"
+            className="w-full mt-2 text-gray-100"
           />
+          {category.imagePreview.length > 0 && (
+            <div className="mt-2 grid grid-cols-3 gap-2">
+              {category.imagePreview.map((preview, index) => (
+                <div key={index} className="relative">
+                  <img src={preview} alt="Preview" className="w-full h-20 object-cover rounded-md" />
+                  <button
+                    onClick={() => handleRemoveImage(index)}
+                    className="absolute top-1 right-1 bg-black bg-opacity-50 rounded-full p-1 text-red-400"
+                  >
+                    <X size={14} />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
-        <button
-          onClick={onSubmit}
-          className={`w-full ${buttonColor} text-white py-2 rounded-lg font-medium`}
-        >
-          {buttonLabel}
-        </button>
-      </motion.div>
+
+        <div className="mt-4">
+          <button
+            onClick={onSubmit}
+            className={`w-full py-2 text-white rounded-lg ${buttonColor}`}
+          >
+            {buttonLabel}
+          </button>
+        </div>
+      </div>
     </motion.div>
   );
 };
