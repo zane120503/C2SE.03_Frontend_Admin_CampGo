@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 import React, { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { ChevronLeft, ChevronRight, Search, Trash2, UserPlus, Loader2, Lock, Unlock, UserCheck } from 'lucide-react';

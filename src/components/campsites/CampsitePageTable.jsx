@@ -81,8 +81,8 @@ const CampsitePageTable = () => {
         const normalizedSearchTerm = removeVietnameseTones(value);
         console.log('Normalized Search Term:', normalizedSearchTerm);
         const filtered = campsites.filter((camp) =>
-            removeVietnameseTones(camp.campsiteName).includes(normalizedSearchTerm) || // Tìm kiếm theo tên campsite
-            removeVietnameseTones(camp.location).includes(normalizedSearchTerm)  // Tìm kiếm theo địa điểm
+            removeVietnameseTones(camp.campsiteName).includes(normalizedSearchTerm) ||
+            removeVietnameseTones(camp.location).includes(normalizedSearchTerm)  
         );
         console.log('Filtered Campsites:', filtered);
         setFilteredCampsites(filtered); 
@@ -132,6 +132,7 @@ const CampsitePageTable = () => {
     };
 
     const handleEdit = (campsite) => {
+        console.log('Editing campsite:', campsite);
         setEditCampsite(campsite);
         setEditModalOpen(true);
     };
@@ -218,11 +219,11 @@ const CampsitePageTable = () => {
         }));
     };
 
-    const handleImageChange = (e) => {
+    const handleImageChange = (e, setCampsiteFunc) => {
         const files = Array.from(e.target.files);
-        setNewCampsite(prevState => ({
-            ...prevState,
-            images: [...prevState.images, ...files]
+        setCampsiteFunc(prev => ({
+            ...prev,
+            images: [...(prev.images || []), ...files]
         }));
     };
 
@@ -539,18 +540,26 @@ const CampsiteModal = ({ title, onClose, onSubmit, campsite, setCampsite, button
                         type="file"
                         accept="image/*"
                         multiple
-                        onChange={handleImageChange}
+                        onChange={(e) => handleImageChange(e, setCampsite)}
                         className="w-full p-2 bg-gray-700 rounded-lg mt-2"
                     />
                     <div className="mt-2 flex gap-2">
-                        {campsite.images.map((image, index) => (
-                            <div key={index} className="relative">
-                                <img src={URL.createObjectURL(image)} alt="Preview" className="w-16 h-16 object-cover rounded-md" />
-                                <button type="button" onClick={() => handleRemoveImage(index)} className="absolute top-0 right-0 p-1 bg-gray-800 text-white rounded-full">
-                                    <X size={12} />
-                                </button>
+                    {campsite.images?.map((img, index) => {
+                        let imageUrl;
+                        if (img instanceof File) {
+                            imageUrl = URL.createObjectURL(img);
+                        } else if (typeof img === 'string') {
+                            imageUrl = img; // ảnh từ backend
+                        } else {
+                            return null;
+                        }
+                        return (
+                            <div key={index}>
+                            <img src={imageUrl} alt={`Preview ${index}`} className="w-16 h-16 object-cover" />
+                            <button onClick={() => handleRemoveImage(index)}>×</button>
                             </div>
-                        ))}
+                        );
+                        })}
                     </div>
                 </div>
                 <div className="mt-6">
