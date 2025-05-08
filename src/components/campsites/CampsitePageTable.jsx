@@ -208,9 +208,10 @@ const CampsitePageTable = () => {
     const handleAddFacility = () => {
         setNewCampsite(prevState => ({
             ...prevState,
-            facilities: [...prevState.facilities, '']
+            facilities: [...prevState.facilities, ''] 
         }));
     };
+    
 
     const handleRemoveFacility = (index) => {
         setNewCampsite(prevState => ({
@@ -218,6 +219,7 @@ const CampsitePageTable = () => {
             facilities: prevState.facilities.filter((_, i) => i !== index)
         }));
     };
+    
 
     const handleImageChange = (e, setCampsiteFunc) => {
         const files = Array.from(e.target.files);
@@ -232,8 +234,37 @@ const CampsitePageTable = () => {
             ...prevState,
             images: prevState.images.filter((_, i) => i !== index)
         }));
-    };
+    };    
 
+    const handleAddFacilityEdit = () => {
+        setEditCampsite(prevState => ({
+            ...prevState,
+            facilities: [...(prevState.facilities || []), '']
+        }));
+    };
+    
+    const handleRemoveFacilityEdit = (index) => {
+        setEditCampsite(prevState => ({
+            ...prevState,
+            facilities: prevState.facilities.filter((_, i) => i !== index)
+        }));
+    };
+    
+    const handleImageChangeEdit = (e) => {
+        const files = Array.from(e.target.files);
+        setEditCampsite(prev => ({
+            ...prev,
+            images: [...(prev.images || []), ...files]
+        }));
+    };
+    
+    const handleRemoveImageEdit = (index) => {
+        setEditCampsite(prevState => ({
+            ...prevState,
+            images: prevState.images.filter((_, i) => i !== index)
+        }));
+    };
+    
     return (
         <motion.div className="bg-gray-800 bg-opacity-50 shadow-lg backdrop-blur-md rounded-xl p-5 border border-gray-700">
             {/* Add campsite button */}
@@ -270,6 +301,7 @@ const CampsitePageTable = () => {
                     <table className='min-w-full divide-y divide-gray-700'>
                         <thead>
                             <tr>
+                                <th className='px-6 py-3 text-left text-sm font-medium text-gray-300'>Image</th>
                                 <th className='px-6 py-3 text-left text-sm font-medium text-gray-300'>Name</th>
                                 <th className='px-6 py-3 text-left text-sm font-medium text-gray-300'>Location</th>
                                 <th className='px-6 py-3 text-left text-sm font-medium text-gray-300'>Status</th>
@@ -284,6 +316,13 @@ const CampsitePageTable = () => {
                                     animate={{ opacity: 1 }}
                                     transition={{ duration: 0.5 }}
                                 >
+                                <td className='px-6 py-4'>
+                                <img
+                                    src={campsite.images?.[0]?.url || '/placeholder.jpg'}
+                                    alt={campsite.campsiteName}
+                                    className='h-12 w-12 rounded object-cover'
+                                />
+                                </td>
                                     <td className='px-6 py-4 text-gray-100'>{campsite.campsiteName}</td>
                                     <td className='px-6 py-4 text-gray-300'>{campsite.location}</td>
                                     <td className='px-6 py-4'>
@@ -293,14 +332,17 @@ const CampsitePageTable = () => {
                                             <span className='text-red-500 font-medium'>Inactive</span>
                                         )}
                                     </td>
-                                    <td className='px-6 py-4 flex space-x-3'>
+                                    <td className='px-6 py-4 flex space-x-3 pt-8'>
                                         <button onClick={() => handleEdit(campsite)} className='text-indigo-400 hover:text-indigo-300'>
                                             <Edit size={18} />
                                         </button>
                                         <button onClick={() => handleDeleteCampsite(campsite._id)} className='text-red-400 hover:text-red-300'>
                                             <Trash2 size={18} />
                                         </button>
-                                        <button onClick={() => handleToggleActive(campsite._id, campsite.isActive)} className={`text-${campsite.isActive ? 'red' : 'green'}-400 hover:text-${campsite.isActive ? 'red' : 'green'}-300`}>
+                                        <button
+                                            onClick={() => handleToggleActive(campsite._id, campsite.isActive)}
+                                            className={`text-${campsite.isActive ? 'red' : 'green'}-400 hover:text-${campsite.isActive ? 'red' : 'green'}-300`}
+                                        >
                                             {campsite.isActive ? <XCircle size={18} /> : <CheckCircle size={18} />}
                                         </button>
                                     </td>
@@ -309,6 +351,7 @@ const CampsitePageTable = () => {
                         </tbody>
                     </table>
                 </div>
+
             )}
 
             {/* Pagination */}
@@ -343,20 +386,21 @@ const CampsitePageTable = () => {
                 />
             )}
             {isEditModalOpen && (
-                <CampsiteModal
-                    title="Edit Campsite"
-                    onClose={() => setEditModalOpen(false)}
-                    onSubmit={handleUpdateCampsite}
-                    campsite={editCampsite}
-                    setCampsite={setEditCampsite}
-                    buttonLabel="Update Campsite"
-                    buttonColor="bg-blue-600 hover:bg-blue-700"
-                    handleAddFacility={handleAddFacility}
-                    handleRemoveFacility={handleRemoveFacility}
-                    handleImageChange={handleImageChange}
-                    handleRemoveImage={handleRemoveImage}
-                />
-            )}
+            <CampsiteModal
+                title="Edit Campsite"
+                onClose={() => setEditModalOpen(false)}
+                onSubmit={handleUpdateCampsite}
+                campsite={editCampsite}
+                setCampsite={setEditCampsite}
+                buttonLabel="Update Campsite"
+                buttonColor="bg-blue-600 hover:bg-blue-700"
+                handleAddFacility={handleAddFacilityEdit}
+                handleRemoveFacility={handleRemoveFacilityEdit}
+                handleImageChange={(e) => handleImageChangeEdit(e)}
+                handleRemoveImage={handleRemoveImageEdit}
+            />
+        )}
+
         </motion.div>
     );
 };
@@ -526,39 +570,52 @@ const CampsiteModal = ({ title, onClose, onSubmit, campsite, setCampsite, button
                                     setCampsite({ ...campsite, facilities: updatedFacilities });
                                 }}
                             />
-                            <button type="button" onClick={() => handleRemoveFacility(index)} className="text-red-500 hover:text-red-300">
+                            <button
+                                type="button"
+                                onClick={() => handleRemoveFacility(index)}
+                                className="text-red-500 hover:text-red-300"
+                            >
                                 <X size={20} />
                             </button>
                         </div>
                     ))}
-                    <button type="button" onClick={handleAddFacility} className="text-blue-500 hover:text-blue-300 mt-2">+ Add Facility</button>
+                    <button
+                        type="button"
+                        onClick={handleAddFacility}
+                        className="text-blue-500 hover:text-blue-300 mt-2"
+                    >
+                        + Add Facility
+                    </button>
                 </div>
                 {/* Image Upload */}
-                <div className="mt-4">
-                    <label className="block text-gray-300">Images</label>
+                <div>
+                    <label className="block text-sm text-gray-400 mb-2">Images</label>
                     <input
                         type="file"
                         accept="image/*"
                         multiple
                         onChange={(e) => handleImageChange(e, setCampsite)}
-                        className="w-full p-2 bg-gray-700 rounded-lg mt-2"
+                        className="block w-full text-sm text-gray-300 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-purple-600 file:text-white hover:file:bg-purple-700"
                     />
-                    <div className="mt-2 flex gap-2">
-                    {campsite.images?.map((img, index) => {
-                        let imageUrl;
-                        if (img instanceof File) {
-                            imageUrl = URL.createObjectURL(img);
-                        } else if (typeof img === 'string') {
-                            imageUrl = img; // ảnh từ backend
-                        } else {
-                            return null;
-                        }
-                        return (
-                            <div key={index}>
-                            <img src={imageUrl} alt={`Preview ${index}`} className="w-16 h-16 object-cover" />
-                            <button onClick={() => handleRemoveImage(index)}>×</button>
-                            </div>
-                        );
+                    <div className="mt-2 flex flex-wrap gap-3">
+                        {campsite.images && campsite.images.map((img, idx) => {
+                            const url = img instanceof File ? URL.createObjectURL(img) : (img.url || img);
+                            return (
+                                <div key={idx} className="relative w-20 h-20">
+                                    <img
+                                        src={url}
+                                        alt={`campsite-img-${idx}`}
+                                        className="w-full h-full object-cover rounded-lg"
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => handleRemoveImage(idx)}
+                                        className="absolute -top-2 -right-2 bg-red-600 text-white rounded-full p-1 hover:bg-red-700"
+                                    >
+                                        <X size={14} />
+                                    </button>
+                                </div>
+                            );
                         })}
                     </div>
                 </div>

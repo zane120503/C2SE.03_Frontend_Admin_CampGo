@@ -2,7 +2,10 @@
 /* eslint-disable no-unused-vars */
 import React, { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import { ChevronLeft, ChevronRight, Edit, Trash2, Plus, X, Search, Loader2, CheckCircle, XCircle } from 'lucide-react';
+import {
+  ChevronLeft, ChevronRight, Edit, Trash2, Plus, X, Search,
+  Loader2, CheckCircle, XCircle
+} from 'lucide-react';
 import axios from 'axios';
 import { toast } from 'react-toastify';
 
@@ -21,6 +24,7 @@ const CategoryTable = () => {
     image: [],
     imagePreview: [],
     isActive: true,
+    existingImage: [],
   });
 
   const [editCategory, setEditCategory] = useState({
@@ -30,6 +34,7 @@ const CategoryTable = () => {
     image: [],
     imagePreview: [],
     isActive: true,
+    existingImage: [],
   });
 
   const fetchCategories = useCallback(async () => {
@@ -86,7 +91,9 @@ const CategoryTable = () => {
       });
       toast.success('Category added successfully');
       setAddModalOpen(false);
-      setNewCategory({ categoryName: '', description: '', image: [], imagePreview: [], isActive: true });
+      setNewCategory({
+        categoryName: '', description: '', image: [], imagePreview: [], isActive: true, existingImage: [],
+      });
       fetchCategories();
     } catch (err) {
       toast.error(err.response?.data?.message || 'Add failed');
@@ -99,7 +106,8 @@ const CategoryTable = () => {
       categoryName: category.categoryName,
       description: category.description,
       image: [],
-      imagePreview: category.image?.url ? [category.image.url] : [],
+      imagePreview: [],
+      existingImage: category.image?.url ? [category.image.url] : [],
       isActive: category.isActive,
     });
     setEditModalOpen(true);
@@ -112,9 +120,7 @@ const CategoryTable = () => {
     formData.append('isActive', editCategory.isActive);
 
     editCategory.image.forEach((file) => {
-      if (file instanceof File) {
-        formData.append('image', file);
-      }
+      formData.append('image', file);
     });
 
     try {
@@ -296,7 +302,6 @@ const CategoryModal = ({ title, onClose, onSubmit, category, setCategory, button
   const handleFileChange = (e) => {
     const files = Array.from(e.target.files);
     const previews = files.map((file) => URL.createObjectURL(file));
-
     setCategory((prev) => ({
       ...prev,
       image: [...prev.image, ...files],
@@ -312,13 +317,15 @@ const CategoryModal = ({ title, onClose, onSubmit, category, setCategory, button
     });
   };
 
+  const handleRemoveExistingImage = () => {
+    setCategory((prev) => ({
+      ...prev,
+      existingImage: [],
+    }));
+  };
+
   return (
-    <motion.div
-      className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-start justify-center pt-2 z-50"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.3 }}
-    >
+    <motion.div className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-start justify-center pt-2 z-50">
       <div className="bg-gray-800 text-gray-100 rounded-lg w-96 p-6">
         <div className="flex justify-between items-center">
           <h3 className="text-lg font-semibold">{title}</h3>
@@ -334,7 +341,6 @@ const CategoryModal = ({ title, onClose, onSubmit, category, setCategory, button
             value={category.categoryName}
             onChange={(e) => setCategory({ ...category, categoryName: e.target.value })}
             className="w-full mt-2 px-4 py-2 bg-gray-700 text-gray-100 rounded-md"
-            required
           />
         </div>
 
@@ -349,34 +355,35 @@ const CategoryModal = ({ title, onClose, onSubmit, category, setCategory, button
 
         <div className="mt-4">
           <label className="block text-sm">Category Image(s)</label>
-          <input
-            type="file"
-            multiple
-            onChange={handleFileChange}
-            className="w-full mt-2 text-gray-100"
-          />
-          {category.imagePreview.length > 0 && (
-            <div className="mt-2 grid grid-cols-3 gap-2">
-              {category.imagePreview.map((preview, index) => (
-                <div key={index} className="relative">
-                  <img src={preview} alt="Preview" className="w-full h-20 object-cover rounded-md" />
-                  <button
-                    onClick={() => handleRemoveImage(index)}
-                    className="absolute top-1 right-1 bg-black bg-opacity-50 rounded-full p-1 text-red-400"
-                  >
-                    <X size={14} />
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
+          <input type="file" multiple onChange={handleFileChange} className="w-full mt-2 text-gray-100" />
+          <div className="mt-2 grid grid-cols-3 gap-2">
+            {category.existingImage?.map((img, index) => (
+              <div key={`existing-${index}`} className="relative">
+                <img src={img} alt="Existing" className="w-full h-20 object-cover rounded-md" />
+                <button
+                  onClick={handleRemoveExistingImage}
+                  className="absolute top-1 right-1 bg-black bg-opacity-50 rounded-full p-1 text-red-400"
+                >
+                  <X size={14} />
+                </button>
+              </div>
+            ))}
+            {category.imagePreview?.map((preview, index) => (
+              <div key={`preview-${index}`} className="relative">
+                <img src={preview} alt="Preview" className="w-full h-20 object-cover rounded-md" />
+                <button
+                  onClick={() => handleRemoveImage(index)}
+                  className="absolute top-1 right-1 bg-black bg-opacity-50 rounded-full p-1 text-red-400"
+                >
+                  <X size={14} />
+                </button>
+              </div>
+            ))}
+          </div>
         </div>
 
         <div className="mt-4">
-          <button
-            onClick={onSubmit}
-            className={`w-full py-2 text-white rounded-lg ${buttonColor}`}
-          >
+          <button onClick={onSubmit} className={`w-full py-2 text-white rounded-lg ${buttonColor}`}>
             {buttonLabel}
           </button>
         </div>
