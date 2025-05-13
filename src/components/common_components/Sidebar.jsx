@@ -1,5 +1,6 @@
+/* eslint-disable no-unused-vars */
 import React, { useEffect, useState } from "react";
-import { BarChart2, DollarSign, Settings, ShoppingBag, ShoppingCart, TrendingUp, Users, Menu } from "lucide-react";
+import { BarChart2, Settings, ShoppingBag, ShoppingCart, Users, Menu, TentTree } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
@@ -12,6 +13,7 @@ const SIDEBAR_ITEMS = [
     { name: "Category", icon: Tags, color: "#A855F7", href: "/categories" },
     { name: "Products", icon: ShoppingBag, color: "#8B5CF6", href: "/products" },
     { name: "Users", icon: Users, color: "#EC4899", href: "/users" },
+    { name: "Campsite Owners", icon: TentTree, color: "#EC4899", href: "/campsiteowners" },
     { name: "Campsites", icon: MapPin, color: "#6366f1", href: "/campsites" },
     { name: "Orders", icon: ShoppingCart, color: "#F59E0B", href: "/orders" },
     { name: "Settings", icon: Settings, color: "#6EE7B7", href: "/settings" },
@@ -19,7 +21,7 @@ const SIDEBAR_ITEMS = [
 
 const Sidebar = () => {
     const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-    const [isMobile, setIsMobile] = useState(false); // State to track mobile devices
+    const [isMobile, setIsMobile] = useState(false); 
     const { logout } = useAuth();
     const navigate = useNavigate();
 
@@ -60,7 +62,7 @@ const Sidebar = () => {
                         whileTap={{ scale: 0.8 }}
                         onClick={() => setIsSidebarOpen(!isSidebarOpen)}
                         className="p-2 rounded-full hover:bg-gray-700 transition-colors max-w-fit"
-                        disabled={isMobile} // Disable button on mobile devices
+                        disabled={isMobile} 
                     >
                         <Menu size={26} />
                     </motion.button>

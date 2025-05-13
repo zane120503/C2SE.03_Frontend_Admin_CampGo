@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 import React from 'react'
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { useAuth } from './context/AuthContext'
@@ -8,6 +9,7 @@ import OverviewPage from './pages/OverviewPage'
 import ProductsPage from './pages/ProductsPage'
 import UsersPage from './pages/UsersPage'
 import CampsitePage from './pages/CampsitePage'
+import CampsiteOwnerPage from './pages/CampsiteOwnerPage'
 import OrdersPage from './pages/OrdersPage'
 import SettingsPage from './pages/SettingsPage'
 import CategoryPage from './pages/CategoryPage'
@@ -88,6 +90,17 @@ const App = () => {
             element={
               isAuthenticated ? (
                 <OrdersPage />
+              ) : (
+                <Navigate to="/login" replace />
+              )
+            }
+          />
+
+          <Route
+            path="/campsiteowners"
+            element={
+              isAuthenticated ? (
+                <CampsiteOwnerPage />
               ) : (
                 <Navigate to="/login" replace />
               )
