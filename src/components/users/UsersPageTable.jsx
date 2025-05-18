@@ -1,7 +1,7 @@
 /* eslint-disable no-unused-vars */
 import React, { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import { ChevronLeft, ChevronRight, Search, Trash2, UserPlus, Loader2, Lock, Unlock, UserCheck } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Search, Trash2, Lock, Unlock, UserCheck, Loader2 } from 'lucide-react';
 import axios from 'axios';
 import { toast } from 'react-toastify';
 
@@ -10,67 +10,60 @@ const UsersPageTable = () => {
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(0);
-  const [totalUsers, setTotalUsers] = useState(0);
-  const [isAddModalOpen, setAddModalOpen] = useState(false);
+  const [roleFilter, setRoleFilter] = useState('');
+  const [campsiteOwnerFilter, setCampsiteOwnerFilter] = useState('');
 
-  const [newUser, setNewUser] = useState({
-    user_name: '',
-    email: '',
-    password: '',
-    role: 'Customer'
-  });
+  const usersPerPage = 5;
 
   const fetchUsers = useCallback(async () => {
     setLoading(true);
     try {
       const token = localStorage.getItem('accessToken');
       const response = await axios.get(`http://localhost:3000/api/admin/users`, {
-        headers: { Authorization: `Bearer ${token}` },
-        params: {
-          page: currentPage,
-          search: searchTerm,
-          limit: 5, // Adjust page size here
-          sortBy: 'createdAt',
-          sortOrder: 'desc'
-        }
+        headers: { Authorization: `Bearer ${token}` }
       });
 
-      setUsers(response.data.users);
-      setTotalUsers(response.data.totalUsers);
-      setTotalPages(response.data.totalPages);
+      setUsers(response.data.users); // load toàn bộ user
     } catch (error) {
       toast.error('Error fetching users');
     } finally {
       setLoading(false);
     }
-  }, [searchTerm, currentPage]);
+  }, []);
 
   useEffect(() => {
     fetchUsers();
   }, [fetchUsers]);
 
-  const handleAdd = async () => {
-    try {
-      const token = localStorage.getItem('accessToken');
-      const payload = {
-        ...newUser,
-        isAdmin: newUser.role === 'Admin'
-      };
-      await axios.post(`http://localhost:3000/api/admin/users`, payload, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
-      toast.success('User added successfully');
-      setAddModalOpen(false);
-      setNewUser({ user_name: '', email: '', password: '', role: 'Customer' });
-      fetchUsers();
-    } catch (error) {
-      toast.error(error.response?.data?.message || 'Error adding user');
-    }
-  };
+  // Filter at frontend
+  const filteredUsers = users.filter((user) => {
+    const matchesSearch =
+      user.user_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.email.toLowerCase().includes(searchTerm.toLowerCase());
+
+    const matchesRole =
+      roleFilter === ''
+        ? true
+        : roleFilter === 'Admin'
+        ? user.isAdmin
+        : !user.isAdmin;
+
+    const matchesCampsiteOwner =
+      campsiteOwnerFilter === ''
+        ? true
+        : campsiteOwnerFilter === 'true'
+        ? user.isCampsiteOwner
+        : !user.isCampsiteOwner;
+
+    return matchesSearch && matchesRole && matchesCampsiteOwner;
+  });
+
+  const totalPages = Math.ceil(filteredUsers.length / usersPerPage);
+
+  const paginatedUsers = filteredUsers.slice(
+    (currentPage - 1) * usersPerPage,
+    currentPage * usersPerPage
+  );
 
   const handleDelete = async (id) => {
     if (!window.confirm('Are you sure you want to delete this user?')) return;
@@ -114,20 +107,38 @@ const UsersPageTable = () => {
 
   return (
     <motion.div className="bg-gray-800 bg-opacity-50 shadow-lg backdrop-blur-md rounded-xl p-5 border border-gray-700">
-      <div className="flex justify-between mb-4">
-        <div className="flex gap-3">
-          <Search className="text-gray-400 mt-1" />
-          <input
-            type="text"
-            value={searchTerm}
-            onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
-            placeholder="Search users..."
+      <div className="flex justify-between mb-4 items-center">
+        <div></div>
+        <div className="flex flex-wrap items-center gap-3 ml-auto">
+          <select
+            onChange={(e) => { setRoleFilter(e.target.value); setCurrentPage(1); }}
+            value={roleFilter}
             className="bg-gray-700 text-white px-3 py-2 rounded-md"
-          />
+          >
+            <option value="">All Roles</option>
+            <option value="Admin">Admin</option>
+            <option value="Customer">Customer</option>
+          </select>
+          <select
+            onChange={(e) => { setCampsiteOwnerFilter(e.target.value); setCurrentPage(1); }}
+            value={campsiteOwnerFilter}
+            className="bg-gray-700 text-white px-3 py-2 rounded-md"
+          >
+            <option value="">All Owners</option>
+            <option value="true">Campsite Owner</option>
+            <option value="false">Not Owner</option>
+          </select>
+          <div className="flex items-center gap-2">
+            <Search className="text-gray-400" />
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
+              placeholder="Search users..."
+              className="bg-gray-700 text-white px-3 py-2 rounded-md"
+            />
+          </div>
         </div>
-        <button onClick={() => setAddModalOpen(true)} className="bg-blue-600 text-white px-4 py-2 rounded-md">
-          <UserPlus className="inline mr-2" /> Add User
-        </button>
       </div>
 
       {loading ? (
@@ -141,16 +152,18 @@ const UsersPageTable = () => {
               <th className="px-4 py-2">Name</th>
               <th className="px-4 py-2">Email</th>
               <th className="px-4 py-2">Role</th>
+              <th className="px-4 py-2">Campsite Owner</th>
               <th className="px-4 py-2">Status</th>
               <th className="px-4 py-2">Actions</th>
             </tr>
           </thead>
           <tbody>
-            {users.map(user => (
+            {paginatedUsers.map(user => (
               <tr key={user._id} className="text-gray-100 border-t border-gray-700">
                 <td className="px-4 py-2">{user.user_name}</td>
                 <td className="px-4 py-2">{user.email}</td>
                 <td className="px-4 py-2">{user.isAdmin ? 'Admin' : 'Customer'}</td>
+                <td className="px-4 py-2">{user.isCampsiteOwner ? 'Campsite Owner' : ''}</td>
                 <td className="px-4 py-2">
                   <span className={user.isBlocked ? 'text-red-500' : 'text-green-500'}>
                     {user.isBlocked ? 'Blocked' : 'Active'}
@@ -178,61 +191,26 @@ const UsersPageTable = () => {
       )}
 
       <div className="flex justify-between items-center mt-4">
-        <span className="text-gray-400">Showing {users.length} of {totalUsers}</span>
+        <span className="text-gray-400">
+          Showing {paginatedUsers.length} of {filteredUsers.length} 
+        </span>
         <div className="flex gap-2">
-          <button onClick={() => setCurrentPage(p => Math.max(p - 1, 1))} disabled={currentPage === 1} className="bg-gray-600 px-3 py-1 rounded">
+          <button
+            onClick={() => setCurrentPage(p => Math.max(p - 1, 1))}
+            disabled={currentPage === 1}
+            className="bg-gray-600 px-3 py-1 rounded"
+          >
             <ChevronLeft />
           </button>
-          <button onClick={() => setCurrentPage(p => Math.min(p + 1, totalPages))} disabled={currentPage === totalPages} className="bg-gray-600 px-3 py-1 rounded">
+          <button
+            onClick={() => setCurrentPage(p => Math.min(p + 1, totalPages))}
+            disabled={currentPage === totalPages}
+            className="bg-gray-600 px-3 py-1 rounded"
+          >
             <ChevronRight />
           </button>
         </div>
       </div>
-
-      {isAddModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
-          <motion.div className="bg-gray-900 p-6 rounded-lg shadow-lg w-full max-w-md" initial={{ scale: 0.8 }} animate={{ scale: 1 }}>
-            <h2 className="text-white text-xl mb-4">Add New User</h2>
-            <input
-              type="text"
-              placeholder="User Name"
-              value={newUser.user_name}
-              onChange={(e) => setNewUser({ ...newUser, user_name: e.target.value })}
-              className="w-full mb-2 px-4 py-2 bg-gray-700 text-white rounded"
-            />
-            <input
-              type="email"
-              placeholder="Email"
-              value={newUser.email}
-              onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
-              className="w-full mb-2 px-4 py-2 bg-gray-700 text-white rounded"
-            />
-            <input
-              type="password"
-              placeholder="Password"
-              value={newUser.password}
-              onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
-              className="w-full mb-2 px-4 py-2 bg-gray-700 text-white rounded"
-            />
-            <select
-              value={newUser.role}
-              onChange={(e) => setNewUser({ ...newUser, role: e.target.value })}
-              className="w-full mb-4 px-4 py-2 bg-gray-700 text-white rounded"
-            >
-              <option value="Customer">Customer</option>
-              <option value="Admin">Admin</option>
-            </select>
-            <div className="flex justify-end gap-2">
-              <button onClick={() => setAddModalOpen(false)} className="px-4 py-2 bg-gray-600 text-white rounded">
-                Cancel
-              </button>
-              <button onClick={handleAdd} className="px-4 py-2 bg-blue-600 text-white rounded">
-                Add
-              </button>
-            </div>
-          </motion.div>
-        </div>
-      )}
     </motion.div>
   );
 };
